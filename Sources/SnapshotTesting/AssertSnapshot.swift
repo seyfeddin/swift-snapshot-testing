@@ -324,7 +324,7 @@ public func verifySnapshot<Value, Format>(
       let testName = sanitizePathComponent(testName)
       var snapshotFileUrl =
         snapshotDirectoryUrl
-        .appendingPathComponent("\(testName).\(identifier)")
+        .appendingPathComponent("\(identifier)")
       if let ext = snapshotting.pathExtension {
         snapshotFileUrl = snapshotFileUrl.appendingPathExtension(ext)
       }
