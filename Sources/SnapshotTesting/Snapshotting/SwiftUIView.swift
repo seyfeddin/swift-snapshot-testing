@@ -78,6 +78,8 @@
 
             controller = hostingController
           }
+          
+          controller.view.backgroundColor = .clear
 
           return snapshotView(
             config: config,
