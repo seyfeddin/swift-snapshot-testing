@@ -1,6 +1,12 @@
 import Foundation
 import XCTest
 
+#if canImport(UIKit)
+  import UIKit
+#elseif canImport(AppKit)
+  import AppKit
+#endif
+
 #if canImport(Testing)
   import Testing
 #endif
@@ -374,7 +380,7 @@ public func verifySnapshot<Value, Format>(
           if ProcessInfo.processInfo.environment.keys.contains("__XCODE_BUILT_PRODUCTS_DIR_PATHS") {
             if isSwiftTesting {
               #if compiler(>=6.2)
-                Attachment.record(
+                recordSwiftTestingAttachment(
                   writeToDisk ? try Data(contentsOf: snapshotFileUrl) : snapshotData,
                   named: snapshotFileUrl.lastPathComponent,
                   sourceLocation: SourceLocation(
@@ -482,7 +488,7 @@ public func verifySnapshot<Value, Format>(
                   case .xcTest:
                     break
                   case .data(let data, let name):
-                    Attachment.record(
+                    recordSwiftTestingAttachment(
                       data,
                       named: name,
                       sourceLocation: SourceLocation(
@@ -626,3 +632,24 @@ enum File {
     }
   }
 }
+
+#if canImport(Testing) && compiler(>=6.2)
+  private func recordSwiftTestingAttachment(
+    _ data: Data,
+    named name: String,
+    sourceLocation: SourceLocation
+  ) {
+    #if !os(Android) && !os(Linux) && !os(Windows)
+      #if compiler(>=6.3) && (canImport(UIKit) || canImport(AppKit))
+        if #available(iOS 14.0, tvOS 14.0, macOS 11.0, *),
+          name.hasSuffix(".png"),
+          let image = Image(data: data)
+        {
+          Attachment.record(image, named: name, as: .png, sourceLocation: sourceLocation)
+          return
+        }
+      #endif
+      Attachment.record(data, named: name, sourceLocation: sourceLocation)
+    #endif
+  }
+#endif
