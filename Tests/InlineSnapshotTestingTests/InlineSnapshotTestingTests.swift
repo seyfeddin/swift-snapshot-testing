@@ -3,13 +3,7 @@ import Foundation
 import SnapshotTesting
 import XCTest
 
-final class InlineSnapshotTestingTests: XCTestCase {
-  override func invokeTest() {
-    withSnapshotTesting(record: .missing, diffTool: .ksdiff) {
-      super.invokeTest()
-    }
-  }
-
+final class InlineSnapshotTestingTests: BaseTestCase {
   func testInlineSnapshot() {
     assertInlineSnapshot(of: ["Hello", "World"], as: .dump) {
       """
@@ -289,8 +283,8 @@ final class InlineSnapshotTestingTests: XCTestCase {
 
   #if canImport(Darwin)
     func testRecordFailed_IncorrectExpectation() throws {
-      let initialInlineSnapshotState = inlineSnapshotState
-      defer { inlineSnapshotState = initialInlineSnapshotState }
+      let initialInlineSnapshotState = inlineSnapshotState.withLock { $0 }
+      defer { inlineSnapshotState.withLock { $0 = initialInlineSnapshotState } }
 
       XCTExpectFailure {
         withSnapshotTesting(record: .failed) {
@@ -312,19 +306,21 @@ final class InlineSnapshotTestingTests: XCTestCase {
           """
       }
 
-      XCTAssertEqual(inlineSnapshotState.count, 1)
-      XCTAssertEqual(
-        String(describing: inlineSnapshotState.keys.first!.path)
-          .hasSuffix("InlineSnapshotTestingTests.swift"),
-        true
-      )
+      inlineSnapshotState.withLock { inlineSnapshotState in
+        XCTAssertEqual(inlineSnapshotState.count, 1)
+        XCTAssertEqual(
+          String(describing: inlineSnapshotState.keys.first!.path)
+            .hasSuffix("InlineSnapshotTestingTests.swift"),
+          true
+        )
+      }
     }
   #endif
 
   #if canImport(Darwin)
     func testRecordFailed_MissingExpectation() throws {
-      let initialInlineSnapshotState = inlineSnapshotState
-      defer { inlineSnapshotState = initialInlineSnapshotState }
+      let initialInlineSnapshotState = inlineSnapshotState.withLock { $0 }
+      defer { inlineSnapshotState.withLock { $0 = initialInlineSnapshotState } }
 
       XCTExpectFailure {
         withSnapshotTesting(record: .failed) {
@@ -342,12 +338,14 @@ final class InlineSnapshotTestingTests: XCTestCase {
           """
       }
 
-      XCTAssertEqual(inlineSnapshotState.count, 1)
-      XCTAssertEqual(
-        String(describing: inlineSnapshotState.keys.first!.path)
-          .hasSuffix("InlineSnapshotTestingTests.swift"),
-        true
-      )
+      inlineSnapshotState.withLock { inlineSnapshotState in
+        XCTAssertEqual(inlineSnapshotState.count, 1)
+        XCTAssertEqual(
+          String(describing: inlineSnapshotState.keys.first!.path)
+            .hasSuffix("InlineSnapshotTestingTests.swift"),
+          true
+        )
+      }
     }
   #endif
 }
